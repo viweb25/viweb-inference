@@ -24,6 +24,20 @@ class InspectionResult(BaseModel):
     model: str | None = None
 
 
+async def read_jpeg(request: Request) -> bytes:
+    if request.headers.get("content-type") != "image/jpeg":
+        raise ValueError("A JPEG frame is required.")
+    image = bytearray()
+    async for chunk in request.stream():
+        if len(image) + len(chunk) > MAX_IMAGE_BYTES:
+            raise ValueError("Image exceeds 5 MiB.")
+        image.extend(chunk)
+    if not image.startswith(b"\xff\xd8\xff") or not image.endswith(b"\xff\xd9"):
+        raise ValueError("Invalid JPEG frame.")
+
+    return bytes(image)
+
+
 @router.post(
     "/inspect",
     response_model=InspectionResult,
@@ -38,15 +52,10 @@ async def inspect_image(
     request: Request,
     rule: Annotated[str, Query(min_length=1, max_length=400, pattern=r"\S")],
 ):
-    if request.headers.get("content-type") != "image/jpeg":
-        return InspectionResult(decision="HOLD", reason="A JPEG frame is required.")
-    image = bytearray()
-    async for chunk in request.stream():
-        if len(image) + len(chunk) > MAX_IMAGE_BYTES:
-            return InspectionResult(decision="HOLD", reason="Image exceeds 5 MiB.")
-        image.extend(chunk)
-    if not image.startswith(b"\xff\xd8\xff") or not image.endswith(b"\xff\xd9"):
-        return InspectionResult(decision="HOLD", reason="Invalid JPEG frame.")
+    try:
+        image = await read_jpeg(request)
+    except ValueError as exc:
+        return InspectionResult(decision="HOLD", reason=str(exc))
 
     endpoint = os.getenv("VI_DEMO_OLLAMA_URL")
     if not endpoint:

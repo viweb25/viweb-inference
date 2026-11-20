@@ -14,3 +14,12 @@ RUN useradd --uid 10001 --create-home platform && install -d -m 0700 -o platform
 USER platform
 
 CMD ["uvicorn", "vi_inference.main:app", "--host", "0.0.0.0", "--port", "8001"]
+
+FROM base AS yolo
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+RUN uv pip install --python /workspace/.venv/bin/python --torch-backend cpu ultralytics
+USER platform
+
+FROM base AS default

@@ -1,6 +1,95 @@
 {
   "components": {
     "schemas": {
+      "Detection": {
+        "properties": {
+          "confidence": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "x1": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "X1",
+            "type": "number"
+          },
+          "x2": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "X2",
+            "type": "number"
+          },
+          "y1": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Y1",
+            "type": "number"
+          },
+          "y2": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Y2",
+            "type": "number"
+          }
+        },
+        "required": [
+          "label",
+          "confidence",
+          "x1",
+          "y1",
+          "x2",
+          "y2"
+        ],
+        "title": "Detection",
+        "type": "object"
+      },
+      "DetectionResult": {
+        "properties": {
+          "decision": {
+            "enum": [
+              "PASS",
+              "FAIL",
+              "HOLD"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "detections": {
+            "items": {
+              "$ref": "#/components/schemas/Detection"
+            },
+            "title": "Detections",
+            "type": "array"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "decision",
+          "reason"
+        ],
+        "title": "DetectionResult",
+        "type": "object"
+      },
       "ErrorDetail": {
         "properties": {
           "code": {
@@ -142,6 +231,85 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/demo/detect": {
+      "post": {
+        "operationId": "inspect_objects_api_v1_demo_detect_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "target",
+            "required": true,
+            "schema": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Target",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_count",
+            "required": true,
+            "schema": {
+              "maximum": 999,
+              "minimum": 1,
+              "title": "Expected Count",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "confidence",
+            "required": false,
+            "schema": {
+              "default": 0.5,
+              "maximum": 1,
+              "minimum": 0.01,
+              "title": "Confidence",
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "image/jpeg": {
+              "schema": {
+                "format": "binary",
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DetectionResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Inspect Objects",
+        "tags": [
+          "Object detection"
+        ]
+      }
+    },
     "/api/v1/demo/inspect": {
       "post": {
         "operationId": "inspect_image_api_v1_demo_inspect_post",
