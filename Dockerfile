@@ -20,6 +20,9 @@ USER root
 RUN apt-get update && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 RUN uv pip install --python /workspace/.venv/bin/python --torch-backend cpu ultralytics==8.4.216 "pyyaml>=6,<7"
+ADD --checksum=sha256:0ebbc80d4a7680d14987a577cd21342b65ecfd94632bd9a8da63ae6417644ee1 https://huggingface.co/Ultralytics/YOLO11/resolve/5599de6/yolo11n.pt /opt/viweb/yolo11n.pt
+RUN chmod 0644 /opt/viweb/yolo11n.pt
+ENV VI_TRAINING_WEIGHTS=/opt/viweb/yolo11n.pt
 USER platform
 
 FROM base AS default
