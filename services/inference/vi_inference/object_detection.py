@@ -196,11 +196,15 @@ async def detect_scene(image: bytes, confidence: float) -> ImageAnalysis:
 async def analyze_image(
     request: Request,
     confidence: Annotated[float, Query(ge=0.01, le=1)] = 0.5,
+    describe: bool = True,
 ):
     try:
         image = await read_jpeg(request)
     except ValueError as exc:
         return ImageAnalysis(error=str(exc))
+
+    if not describe:
+        return await detect_scene(image, confidence)
 
     result, description = await asyncio.gather(
         detect_scene(image, confidence), describe_scene(image)
