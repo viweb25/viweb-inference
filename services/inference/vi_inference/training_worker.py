@@ -12,7 +12,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import asyncpg
-
 from PIL import Image, UnidentifiedImageError
 
 logger = logging.getLogger(__name__)
@@ -68,7 +67,9 @@ def split_photos(photos, part_name, options=None):
             positive = test_candidates
         else:
             test = []
-    negative_count = max(1, round(len(negative) * validation_percent / 100)) if len(negative) >= 2 else 0
+    negative_count = (
+        max(1, round(len(negative) * validation_percent / 100)) if len(negative) >= 2 else 0
+    )
     test_negative_count = min(
         len(negative) - negative_count - 1,
         max(1, round(len(negative) * test_percent / 100)),
@@ -115,7 +116,9 @@ def make_dataset(root, image_root, job, snapshot):
                 shutil.copyfile(source, images / f"{stem}.{suffix}")
             except (OSError, UnidentifiedImageError, Image.DecompressionBombError) as exc:
                 name = photo.get("filename") or stem
-                raise TrainingInputError(f"Cannot read {name}. Re-upload that photo and try again.") from exc
+                raise TrainingInputError(
+                    f"Cannot read {name}. Re-upload that photo and try again."
+                ) from exc
             lines = []
             for box in photo["boxes"]:
                 a, b = box["start"], box["end"]
@@ -144,7 +147,9 @@ async def train(job, image_root, run_root, epochs, connection):
     options = snapshot.get("options") or {}
     pretrained = os.getenv("VI_TRAINING_WEIGHTS")
     if options.get("pretrained", True) and pretrained and not Path(pretrained).is_file():
-        raise TrainingInputError("The Hugging Face starter weights are missing from the training worker.")
+        raise TrainingInputError(
+            "The Hugging Face starter weights are missing from the training worker."
+        )
     output = run_root / snapshot["org_id"] / str(job["id"])
     output.mkdir(parents=True)
     weights_cache = run_root / "pretrained"
@@ -156,7 +161,8 @@ async def train(job, image_root, run_root, epochs, connection):
         settings = Path(directory) / "training.json"
         settings.write_text(json.dumps({
             key: value for key, value in options.items() if key not in {
-                "version_name", "notes", "max_minutes", "validation_percent", "test_percent", "min_box_px",
+                "version_name", "notes", "max_minutes", "validation_percent", "test_percent",
+                "min_box_px",
                 "preset",
             }
         }))
@@ -240,7 +246,10 @@ async def run():
                 status, error = "failed", str(exc)
             except TimeoutError:
                 logger.exception("Training job %s timed out", job["id"])
-                status, error = "failed", "Training reached its time limit. Try a smaller photo set or a longer limit."
+                status, error = "failed", (
+                    "Training reached its time limit. "
+                    "Try a smaller photo set or a longer limit."
+                )
             except Exception:
                 logger.exception("Training job %s failed", job["id"])
                 status = "failed"
